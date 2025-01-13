@@ -21,7 +21,7 @@ Version:        1.5.1
 Release:        0
 Summary:        Python dependency management and packaging made easy
 License:        MIT
-URL:            None
+URL:            https://python-poetry.org/
 Source:         https://files.pythonhosted.org/packages/source/p/poetry/poetry-%{version}.tar.gz
 BuildRequires:  python-rpm-macros
 BuildRequires:  %{python_module pip}
