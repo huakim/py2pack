@@ -33,6 +33,7 @@ dependencies = [
     "setuptools",
     "metaextract",
     "platformdirs",
+    "distro",
     "packaging",
     "pypi-search",
     "requests",
