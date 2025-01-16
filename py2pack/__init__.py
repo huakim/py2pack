@@ -503,7 +503,7 @@ def fetch_data(args):
 
     if not localfile and local:
         localfile = os.path.join(f'{args.name}.egg-info', 'PKG-INFO')
-    if os.path.isfile(localfile):
+    if localfile:
         try:
             data = pypi_archive_file(localfile)
         except Exception:
@@ -516,6 +516,8 @@ def fetch_data(args):
         args.version = data_info['version']
         args.name = data_info['name']
         fix_data(data)
+        if not args.name:
+            args.name = data['info']['name']
     else:
         data = args.fetched_data = pypi_json(args.name, args.version)
         urls = data.get('urls', [])
@@ -525,8 +527,6 @@ def fetch_data(args):
         else:
             args.version = data['info']['version']                 # return current release number
         fix_data(data)
-    if not args.name:
-        args.name = data['info']['name']
 
 
 def newest_download_url(args):
@@ -629,8 +629,8 @@ def main():
     namestr = args.func.__name__
     # Custom validation logic
     if namestr in {'generate', 'show'}:
-        if args.localfile == '' and not args.local and not args.name:
-            subparsers.choices[namestr].error("The name argument is required if not --local or --localfile is provided.")
+        if not args.localfile and not args.name:
+            subparsers.choices[namestr].error("The name argument is required if no --localfile is provided.")
 
     args.func(args)
 
