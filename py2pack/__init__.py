@@ -525,6 +525,8 @@ def fetch_data(args):
         else:
             args.version = data['info']['version']                 # return current release number
         fix_data(data)
+    if not args.name:
+        args.name = data['info']['name']
 
 
 def newest_download_url(args):
