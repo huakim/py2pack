@@ -44,7 +44,7 @@ dynamic = ['version']
 
 
 [project.urls]
-homepage = "http://github.com/openSUSE/py2pack"
+homepage = "http://github.com/huakim/py2pack"
 
 [project.scripts]
 py2pack = "py2pack:main"
