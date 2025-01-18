@@ -5,6 +5,7 @@ ChangeLog
 MANIFEST
 build
 coverage
+.coverage*
 dist
 nosetests.xml
 *.pyc
