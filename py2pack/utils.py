@@ -156,10 +156,10 @@ def _extract_to_tempdir(archive_filename):
     try:
         if tarfile.is_tarfile(archive_filename):
             with tarfile.open(archive_filename) as f:
-                f.extractall(tempdir, filter=lambda fl, p: fl)
+                f.extractall(tempdir)
         elif zipfile.is_zipfile(archive_filename):
             with zipfile.ZipFile(archive_filename) as f:
-                f.extractall(tempdir, filter=lambda fl, p: fl)
+                f.extractall(tempdir)
         else:
             raise Exception("Can not extract '%s'. "
                             "Not a tar or zip file" % archive_filename)
