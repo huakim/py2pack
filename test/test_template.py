@@ -20,7 +20,7 @@ import datetime
 import os
 import os.path
 import sys
-
+from os.path import basename
 import pytest
 
 import py2pack
@@ -90,11 +90,11 @@ def test_template(tmpdir, template, fetch_tarball, project, version):
             py2pack.fetch(args)
             p1 = project[0]
             source_glob = f'https://files.pythonhosted.org/packages/source/{p1}/{project}/{project}-{version}.tar.gz'
-            args.source_glob = source_glob
+            args.source_url = source_glob
             py2pack.generate(args)
             with open(filename) as filehandle:
                 written_spec = filehandle.read()
-            args.localfile = source_glob
+            args.localfile = basename(source_glob)
             py2pack.generate(args)
             with open(filename) as filehandle:
                 assert filehandle.read() == written_spec

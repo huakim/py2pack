@@ -93,11 +93,13 @@ def pypi_text_stream(pkg_info_stream):
     for key, value in pkg_info_lines.items():
         key = key.lower().replace('-', '_')
         if key in {'classifiers', 'requires_dist', 'provides_extra'}:
-            val = pkg_info_dict.get(key)
-            if val is None:
-                val = []
-                pkg_info_dict[key] = val
+            val = dict.setdefault(pkg_info_dict, key, [])
             val.append(value)
+        elif key == 'project_url':
+            key, val = value.split(',', 1)
+            key = key.strip()
+            val = val.strip()
+            pkg_info_dict['project.urls.' + key] = val
         else:
             pkg_info_dict[key] = value
     return {'info': pkg_info_dict, 'urls': []}
@@ -119,10 +121,14 @@ def pypi_json_stream(json_stream):
     return js
 
 
+def check_if_pypi_archive_file(path):
+    return path.count('/') == 1 and basename(path) == 'PKG-INFO'
+
+
 def pypi_archive_file_tar(file_path):
     with tarfile.open(file_path, 'r') as archive:
         for member in archive.getmembers():
-            if basename(member.name) == 'PKG-INFO':
+            if check_if_pypi_archive_file(member.name):
                 return pypi_text_stream(StringIO(archive.extractfile(member).read().decode()))
     raise KeyError('PKG-INFO not found on archive ' + file_path)
 
@@ -130,7 +136,7 @@ def pypi_archive_file_tar(file_path):
 def pypi_archive_file_zip(file_path):
     with zipfile.ZipFile(file_path, 'r') as archive:
         for member in archive.namelist():
-            if basename(member) == 'PKG-INFO':
+            if check_if_pypi_archive_file(member):
                 return pypi_text_stream(StringIO(archive.open(member).read().decode()))
     raise KeyError('PKG-INFO not found on archive ' + file_path)
 
@@ -514,7 +520,6 @@ def fetch_data(args):
         args.fetched_data = data
         data_info = data['info']
         args.version = data_info['version']
-        args.name = data_info['name']
         fix_data(data)
         if not args.name:
             args.name = data['info']['name']

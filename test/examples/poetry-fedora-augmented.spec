@@ -9,7 +9,7 @@ Summary:        Python dependency management and packaging made easy.
 # Check if the automatically generated License and its spelling is correct for Fedora
 # https://docs.fedoraproject.org/en-US/packaging-guidelines/LicensingGuidelines/
 License:        MIT
-URL:            https://python-poetry.org/
+URL:            None
 Source:         https://files.pythonhosted.org/packages/source/p/poetry/poetry-%{version}.tar.gz
 
 BuildRequires:  pyproject-rpm-macros
@@ -133,6 +133,7 @@ external formats like virtual environments
 * [install.python-poetry.org](https://github.com/python-poetry/install.python-poetry.org): The official Poetry
 installation script
 * [website](https://github.com/python-poetry/website): The official Poetry website and blog
+
 }
 
 %description %_description
@@ -160,6 +161,11 @@ Summary:        %{summary}
 # For official Fedora packages, including files with '*' +auto is not allowed
 # Replace it with a list of relevant Python modules/globs and list extra files in %%files
 %pyproject_save_files '*' +auto
+%if %{with test}
+%check
+%pyproject_check_import
+%pytest
+%endif
 
 %files -n %{python_name} -f %{pyproject_files}
 
