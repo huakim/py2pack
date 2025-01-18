@@ -125,27 +125,20 @@ def check_if_pypi_archive_file(path):
     return path.count('/') == 1 and basename(path) == 'PKG-INFO'
 
 
-def pypi_archive_file_tar(file_path):
-    with tarfile.open(file_path, 'r') as archive:
-        for member in archive.getmembers():
-            if check_if_pypi_archive_file(member.name):
-                return pypi_text_stream(StringIO(archive.extractfile(member).read().decode()))
-    raise KeyError('PKG-INFO not found on archive ' + file_path)
-
-
-def pypi_archive_file_zip(file_path):
-    with zipfile.ZipFile(file_path, 'r') as archive:
-        for member in archive.namelist():
-            if check_if_pypi_archive_file(member):
-                return pypi_text_stream(StringIO(archive.open(member).read().decode()))
-    raise KeyError('PKG-INFO not found on archive ' + file_path)
-
-
 def pypi_archive_file(file_path):
-    try:
-        return pypi_archive_file_tar(file_path)
-    except tarfile.ReadError:
-        return pypi_archive_file_zip(file_path)
+    if tarfile.is_tarfile(file_path):
+        with tarfile.open(file_path, 'r') as archive:
+            for member in archive.getmembers():
+                if check_if_pypi_archive_file(member.name):
+                    return pypi_text_stream(StringIO(archive.extractfile(member).read().decode()))
+    elif zipfile.is_zipfile(file_path):
+        with zipfile.ZipFile(file_path, 'r') as archive:
+            for member in archive.namelist():
+                if check_if_pypi_archive_file(member):
+                    return pypi_text_stream(StringIO(archive.open(member).read().decode()))
+    else:
+        raise Exception("Can not extract '%s'. Not a tar or zip file" % file_path)
+    raise KeyError('PKG-INFO not found on archive ' + file_path)
 
 
 def _get_template_dirs():
