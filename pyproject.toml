@@ -37,6 +37,7 @@ dependencies = [
     "packaging",
     "pypi-search",
     "requests",
+    "caseless",
     "tomli; python_version < '3.11'",
 ]
 requires-python = ">=3.6"

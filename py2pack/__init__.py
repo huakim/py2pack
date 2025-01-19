@@ -29,7 +29,7 @@ import jinja2
 import pypi_search.search
 import requests
 from metaextract import utils as meta_utils
-
+from caseless import CaselessDict
 import py2pack.requires
 from py2pack import version as py2pack_version
 from py2pack.utils import (_get_archive_filelist, get_pyproject_table,
@@ -186,6 +186,22 @@ def fix_data(args):
     data_info["requires_dist"] = requires_dist
     data_info["provides_extra"] = provides_extra
     data_info["classifiers"] = (data_info.get("classifiers", []) or [])
+    urls = data_info['project_urls'] = dict(data_info.get('project_urls', {}))
+    if 'home_page' not in data_info:
+        home_page = _get_homepage(urls) or data_info.get('project_url', None)
+        if home_page:
+            data_info['home_page'] = home_page
+
+
+def _get_homepage(urls):
+    try:
+        urls = CaselessDict(urls)
+        for page in ('Homepage', 'Source', 'GitHub', 'Repository', 'GitLab'):
+            if page in urls:
+                return urls[page]
+    except Exception:
+        pass
+    return None
 
 
 def list_packages(args=None):
@@ -225,7 +241,6 @@ def fetch(args):
 
 
 def _canonicalize_setup_data(data):
-
     if data.get('build-system', None):
         # PEP 518: 'requires' field is mandatory
         data['build_requires'] = py2pack.requires._requirements_sanitize(
@@ -316,11 +331,7 @@ def _canonicalize_setup_data(data):
         data["console_scripts"] = list(dict.fromkeys(console_scripts))
 
     # Standards says, that keys must be lowercase but not even PyPA adheres to it
-    homepage = (get_pyproject_table(data, 'project.urls.homepage') or
-                get_pyproject_table(data, 'project.urls.Homepage') or
-                get_pyproject_table(data, 'project.urls.Source') or
-                get_pyproject_table(data, 'project.urls.GitHub') or
-                get_pyproject_table(data, 'project.urls.Repository') or
+    homepage = (_get_homepage(get_pyproject_table(data, 'project.urls')) or
                 data.get('home_page', None))
     if homepage:
         data['home_page'] = homepage
