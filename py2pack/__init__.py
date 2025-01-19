@@ -105,7 +105,8 @@ def pypi_text_items(pkg_info_items):
         if key in {'classifiers', 'requires_dist', 'provides_extra'}:
             val = dict.setdefault(pkg_info_dict, key, [])
             val.append(value)
-        elif key == 'project_url':
+        elif key in {'project_url'}:
+            print('fine')
             key, val = value.split(',', 1)
             key = key.strip()
             val = val.strip()
