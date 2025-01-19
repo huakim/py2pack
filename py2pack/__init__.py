@@ -506,7 +506,7 @@ def Munch(args):
         "__contains__": d.__contains__})()
 
 
-def main(args=None):
+def get_argument_parser(return_subparsers = False):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--version', action='version', version='%(prog)s {0}'.format(py2pack_version.version))
     parser.add_argument('--proxy', help='HTTP proxy to use')
@@ -553,9 +553,15 @@ def main(args=None):
 
     parser_help = subparsers.add_parser('help', help='show this help')
     parser_help.set_defaults(func=lambda args: parser.print_help())
+    if return_subparsers:
+        return parser, subparsers
+    else:
+        return parser
 
+
+def main(args=None):
+    parser, subparsers = get_argument_parser(return_subparsers = True)
     args = Munch(parser.parse_args(args or sys.argv[1:]).__dict__)
-
     # set HTTP proxy if one is provided
     if args.proxy:
         with requests.get(args.proxy) as r:
