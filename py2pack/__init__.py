@@ -517,6 +517,8 @@ def generate(args):
             continue
         # remove line breaks to avoid multiline rpm spec file
         data[field + '_singleline'] = str(data[field]).replace('\n', ' ')
+    if args.homepage:
+        data['home_page'] = str(args.homepage)
 
     env = _prepare_template_env(_get_template_dirs())
     template = env.get_template(args.template)
@@ -621,6 +623,7 @@ def main():
     parser_generate.add_argument('name', nargs='?', help='package name')
     parser_generate.add_argument('version', nargs='?', help='package version (optional)')
     parser_generate.add_argument('--source-url', default=None, help='source url')
+    parser_generate.add_argument('--homepage', default=None, help='home page url')
     parser_generate.add_argument('--maintainer', default=None, help='maintainer name')
     parser_generate.add_argument('--source-glob', help='source glob template')
     parser_generate.add_argument('--local', action='store_true', help='get metadata from local package')
