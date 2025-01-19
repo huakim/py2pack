@@ -511,7 +511,7 @@ def generate(args):
 
     _normalize_license(data)
 
-    for field in ['summary', 'license', 'home_page', 'source_url']:
+    for field in ['summary', 'license', 'home_page', 'source_url', 'description']:
         field_attr = getattr(args, field)
         if field_attr:
             data[field] = field_attr
@@ -631,7 +631,8 @@ def main():
     parser_generate.add_argument('--source-url', default=None, help='source url')
     parser_generate.add_argument('--home-page', default=None, help='home page url')
     parser_generate.add_argument('--summary', default=None, help='summary text')
-    parser_generate.add_argument('--license', default=None, help='license description')
+    parser_generate.add_argument('--license', default=None, help='license text')
+    parser_generate.add_argument('--description', default=None, help='description text')
     parser_generate.add_argument('--source-glob', help='source glob template')
     parser_generate.add_argument('--local', action='store_true', help='get metadata from local package')
     parser_generate.add_argument('--localfile', default='', help='path to the local PKG-INFO or json metadata')
