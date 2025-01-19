@@ -538,6 +538,7 @@ def get_argument_parser(return_subparsers = False):
     parser_generate.add_argument('--source-url', default=None, help='source url')
     parser_generate.add_argument('--home-page', default=None, help='home page url')
     parser_generate.add_argument('--summary', default=None, help='summary text')
+    parser_generate.add_argument('--maintainer', default=None, help='maintainer')
     parser_generate.add_argument('--license', default=None, help='license text')
     parser_generate.add_argument('--description', default=None, help='description text')
     parser_generate.add_argument('--source-glob', help='source glob template')
