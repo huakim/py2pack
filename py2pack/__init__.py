@@ -42,6 +42,7 @@ import zipfile
 from packaging.requirements import Requirement
 from os.path import basename
 from io import StringIO
+from importlib import metadata
 
 
 try:
@@ -89,8 +90,17 @@ def pypi_text_file(pkg_info_path):
 
 def pypi_text_stream(pkg_info_stream):
     pkg_info_lines = parser.Parser().parse(pkg_info_stream)
+    return pypi_text_items(pkg_info_lines.items())
+
+
+def pypi_text_metaextract(library):
+    pkg_info_lines = metadata.metadata(library)
+    return pypi_text_items(pkg_info_lines.items())
+
+
+def pypi_text_items(pkg_info_items):
     pkg_info_dict = {}
-    for key, value in pkg_info_lines.items():
+    for key, value in pkg_info_items:
         key = key.lower().replace('-', '_')
         if key in {'classifiers', 'requires_dist', 'provides_extra'}:
             val = dict.setdefault(pkg_info_dict, key, [])
@@ -121,7 +131,7 @@ def pypi_json_stream(json_stream):
     return js
 
 
-def check_if_pypi_archive_file(path):
+def _check_if_pypi_archive_file(path):
     return path.count('/') == 1 and basename(path) == 'PKG-INFO'
 
 
@@ -129,12 +139,12 @@ def pypi_archive_file(file_path):
     if tarfile.is_tarfile(file_path):
         with tarfile.open(file_path, 'r') as archive:
             for member in archive.getmembers():
-                if check_if_pypi_archive_file(member.name):
+                if _check_if_pypi_archive_file(member.name):
                     return pypi_text_stream(StringIO(archive.extractfile(member).read().decode()))
     elif zipfile.is_zipfile(file_path):
         with zipfile.ZipFile(file_path, 'r') as archive:
             for member in archive.namelist():
-                if check_if_pypi_archive_file(member):
+                if _check_if_pypi_archive_file(member):
                     return pypi_text_stream(StringIO(archive.open(member).read().decode()))
     else:
         raise Exception("Can not extract '%s'. Not a tar or zip file" % file_path)
@@ -158,10 +168,14 @@ def _get_template_dirs():
     ])
 
 
-def fix_data(data):
+def fix_data(args):
+    data = args.fetched_data
     extra_from_req = re.compile(r'''\bextra\s+==\s+["']([^"']+)["']''')
     extras = []
     data_info = data["info"]
+    args.version = data_info['version']                 # return current release number
+    if not args.name:
+        args.name = data_info['name']
     requires_dist = data_info.get("requires_dist", []) or []
     provides_extra = data_info.get("provides_extra", []) or []
     for required_dist in requires_dist:
@@ -497,11 +511,8 @@ def generate(args):
 
 
 def fetch_data(args):
-    localfile = args.localfile or ''
+    localfile = args.localfile or None
     local = args.local
-
-    if not localfile and local:
-        localfile = os.path.join(f'{args.name}.egg-info', 'PKG-INFO')
     if localfile:
         try:
             data = pypi_archive_file(localfile)
@@ -511,20 +522,15 @@ def fetch_data(args):
             except json.decoder.JSONDecodeError:
                 data = pypi_text_file(localfile)
         args.fetched_data = data
-        data_info = data['info']
-        args.version = data_info['version']
-        fix_data(data)
-        if not args.name:
-            args.name = data['info']['name']
+    elif local:
+        args.fetched_data = pypi_text_metaextract(args.name)
     else:
         data = args.fetched_data = pypi_json(args.name, args.version)
         urls = data.get('urls', [])
         if len(urls) == 0:
             print(f"unable to find a suitable release for {args.name}!")
             sys.exit(1)
-        else:
-            args.version = data['info']['version']                 # return current release number
-        fix_data(data)
+    fix_data(args)
 
 
 def newest_download_url(args):
