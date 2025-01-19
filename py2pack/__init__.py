@@ -469,10 +469,9 @@ def generate(args):
     print('generating spec file for {0}...'.format(args.name))
     data = args.fetched_data['info']
     durl = newest_download_url(args)
-    source_url = data['source_url'] = (args.source_url or (durl and durl['download_url']))
+    source_url = data['source_url'] = durl and durl['download_url']
     data['year'] = datetime.datetime.now().year                             # set current year
     data['user_name'] = get_user_name(args)                   # set system user (packager)
-    data['summary_no_ending_dot'] = re.sub(r'(.*)\.', r'\g<1>', data.get('summary')) if data.get('summary') else ""
 
     # If package name supplied on command line differs in case from PyPI's one
     # then package archive will be fetched but the name will be the one from PyPI.
@@ -512,13 +511,20 @@ def generate(args):
 
     _normalize_license(data)
 
-    for field in ['summary', 'license', 'home_page', 'source_url', 'summary_no_ending_dot']:
-        if field not in data:
-            continue
+    for field in ['summary', 'license', 'home_page', 'source_url']:
+        field_attr = getattr(args, field)
+        if field_attr:
+            data[field] = field_attr
+        else:
+            if field not in data:
+                continue
+            else:
+                field_attr = data[field]
         # remove line breaks to avoid multiline rpm spec file
-        data[field + '_singleline'] = str(data[field]).replace('\n', ' ')
-    if args.homepage:
-        data['home_page'] = str(args.homepage)
+        data[field + '_singleline'] = str(field_attr).replace('\n', ' ')
+
+    summary_singleline = data.get('summary_singleline', '')
+    data['summary_no_ending_dot_singleline'] = re.sub(r'(.*)\.', r'\g<1>', summary_singleline) if summary_singleline else ""
 
     env = _prepare_template_env(_get_template_dirs())
     template = env.get_template(args.template)
@@ -623,8 +629,9 @@ def main():
     parser_generate.add_argument('name', nargs='?', help='package name')
     parser_generate.add_argument('version', nargs='?', help='package version (optional)')
     parser_generate.add_argument('--source-url', default=None, help='source url')
-    parser_generate.add_argument('--homepage', default=None, help='home page url')
-    parser_generate.add_argument('--maintainer', default=None, help='maintainer name')
+    parser_generate.add_argument('--home-page', default=None, help='home page url')
+    parser_generate.add_argument('--summary', default=None, help='summary text')
+    parser_generate.add_argument('--license', default=None, help='license description')
     parser_generate.add_argument('--source-glob', help='source glob template')
     parser_generate.add_argument('--local', action='store_true', help='get metadata from local package')
     parser_generate.add_argument('--localfile', default='', help='path to the local PKG-INFO or json metadata')
