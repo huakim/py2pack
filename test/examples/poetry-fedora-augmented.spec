@@ -4,7 +4,7 @@ Name:           python-%{pypi_name}
 Version:        1.5.1
 Release:        %autorelease
 # Fill in the actual package summary to submit package to Fedora
-Summary:        Python dependency management and packaging made easy.
+Summary:        Python dependency management and packaging made easy
 
 # Check if the automatically generated License and its spelling is correct for Fedora
 # https://docs.fedoraproject.org/en-US/packaging-guidelines/LicensingGuidelines/

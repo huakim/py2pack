@@ -22,7 +22,10 @@ import tempfile
 import shutil
 from contextlib import contextmanager
 from build.util import project_wheel_metadata
-
+import pwd
+from email import parser
+import json
+from io import StringIO
 from typing import List  # noqa: F401, pylint: disable=unused-import
 try:
     import tomllib as toml
@@ -31,7 +34,7 @@ except ModuleNotFoundError:
 
 import tarfile
 import zipfile
-
+from importlib import metadata
 from backports.entry_points_selectable import EntryPoint, EntryPoints
 
 
@@ -195,3 +198,94 @@ def get_metadata(filename):
         data['install_requires'] = mdata.get_all('Requires-Dist')
 
     return data
+
+
+def get_user_name():
+    return pwd.getpwuid(os.getuid()).pw_name
+
+
+def no_ending_dot(summary):
+    count = len(summary)
+    while count > 0:
+        count -= 1
+        if summary[count] != '.':
+            count += 1
+            break
+    if count == 0:
+        return ''
+    return summary[0:count]
+
+
+def single_line(summary):
+    return str(summary).replace('\n', ' ').strip()
+
+
+def pypi_text_file(pkg_info_path):
+    pkg_info_file = open(pkg_info_path, 'r')
+    text = pypi_text_stream(pkg_info_file)
+    pkg_info_file.close()
+    return text
+
+
+def pypi_text_stream(pkg_info_stream):
+    pkg_info_lines = parser.Parser().parse(pkg_info_stream)
+    return pypi_text_items(pkg_info_lines.items())
+
+
+def pypi_text_metaextract(library):
+    pkg_info_lines = metadata.metadata(library)
+    return pypi_text_items(pkg_info_lines.items())
+
+
+def pypi_text_items(pkg_info_items):
+    pkg_info_dict = {}
+    for key, value in pkg_info_items:
+        key = key.lower().replace('-', '_')
+        if key in {'requires_dist', 'provides_extra'}:
+            val = dict.setdefault(pkg_info_dict, key, [])
+            val.append(value)
+        elif key in {'classifier'}:
+            val = dict.setdefault(pkg_info_dict, key + 's', [])
+            val.append(value)
+        elif key in {'project_url'}:
+            key1, val = value.split(',', 1)
+            pkg_info_dict.setdefault(key + 's', {})[key1.strip()] = val.strip()
+        else:
+            pkg_info_dict[key] = value
+    return {'info': pkg_info_dict, 'urls': []}
+
+
+def pypi_json_file(file_path):
+    json_file = open(file_path, 'r')
+    js = pypi_json_stream(json_file)
+    json_file.close()
+    return js
+
+
+def pypi_json_stream(json_stream):
+    js = json.load(json_stream)
+    if 'info' not in js:
+        js = {'info': js}
+    if 'urls' not in js:
+        js['urls'] = []
+    return js
+
+
+def _check_if_pypi_archive_file(path):
+    return path.count('/') == 1 and os.path.basename(path) == 'PKG-INFO'
+
+
+def pypi_archive_file(file_path):
+    if tarfile.is_tarfile(file_path):
+        with tarfile.open(file_path, 'r') as archive:
+            for member in archive.getmembers():
+                if _check_if_pypi_archive_file(member.name):
+                    return pypi_text_stream(StringIO(archive.extractfile(member).read().decode()))
+    elif zipfile.is_zipfile(file_path):
+        with zipfile.ZipFile(file_path, 'r') as archive:
+            for member in archive.namelist():
+                if _check_if_pypi_archive_file(member):
+                    return pypi_text_stream(StringIO(archive.open(member).read().decode()))
+    else:
+        raise Exception("Can not extract '%s'. Not a tar or zip file" % file_path)
+    raise KeyError('PKG-INFO not found on archive ' + file_path)

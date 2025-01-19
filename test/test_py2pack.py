@@ -21,21 +21,13 @@ import unittest
 from ddt import ddt, data, unpack
 
 import py2pack
-from py2pack import replace_string
+from py2pack import replace_string, Munch
 
 
 @ddt
 class Py2packTestCase(unittest.TestCase):
     def setUp(self):
-        class Args:
-            name = "py2pack"
-            version = "0.4.4"
-            source_url = None
-            source_glob = None
-            local = False
-            localfile = ""
-
-        self.args = Args()
+        self.args = ['py2pack', '0.4.4']
 
     @data(
         ('py2pack', 'py2pack-0.6.4.tar.gz',
@@ -57,20 +49,21 @@ class Py2packTestCase(unittest.TestCase):
         self.assertEqual(output_string, expected_output_string)
 
     def test_list(self):
-        py2pack.list_packages(self.args)
+        py2pack.run('list', *self.args)
 
     def test_search(self):
-        py2pack.search(self.args)
+        py2pack.run('search', *self.args)
 
     def test_show(self):
-        py2pack.show(self.args)
+        py2pack.run('show', *self.args)
 
     def test_newest_download_url(self):
-        py2pack.fetch_data(self.args)
-        url = py2pack.newest_download_url(self.args)
+        mun = Munch({'name': self.args[0], 'version': self.args[1]})
+        py2pack.fetch_data(mun)
+        url = py2pack.newest_download_url(mun)
         self.assertTrue("url" in url)
         self.assertTrue("filename" in url)
-        filename = "{0}-{1}.tar.gz".format(self.args.name, self.args.version)
+        filename = "{0}-{1}.tar.gz".format(mun.name, mun.version)
         self.assertEqual(url["filename"], filename)
         self.assertEqual(url["packagetype"], "sdist")
 

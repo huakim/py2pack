@@ -4,13 +4,13 @@ Name:           python-%{pypi_name}
 Version:        {{ version }}
 Release:        %autorelease
 # Fill in the actual package summary to submit package to Fedora
-Summary:        {{ summary_singleline }}
+Summary:        {{ no_ending_dot(single_line(summary)) }}
 
 # Check if the automatically generated License and its spelling is correct for Fedora
 # https://docs.fedoraproject.org/en-US/packaging-guidelines/LicensingGuidelines/
-License:        {{ license_singleline }}
-URL:            {{ home_page_singleline }}
-Source:         {{ source_url_singleline|replace(version, '%{version}') }}
+License:        {{ single_line(license) }}
+URL:            {{ single_line(home_page) }}
+Source:         {{ single_line(source_url)|replace(version, '%{version}') }}
 
 BuildRequires:  pyproject-rpm-macros
 BuildRequires:  python3-devel

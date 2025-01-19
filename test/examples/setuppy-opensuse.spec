@@ -19,7 +19,7 @@
 Name:           python-setuppy
 Version:        2021.6.4
 Release:        0
-Summary:        setuppy generator
+Summary:        setup.py generator
 License:        Unlicense (FIXME:No SPDX)
 URL:            https://github.com/git/setuppy.py
 Source:         https://files.pythonhosted.org/packages/source/s/setuppy/setuppy-%{version}.tar.gz

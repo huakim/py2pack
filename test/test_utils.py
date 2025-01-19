@@ -53,6 +53,10 @@ class Py2packUtilsTestCase(unittest.TestCase):
         shutil.make_archive(zipfile_name, "zip", root_dir=zip_data)
         return zipfile_name + ".zip"
 
+    def test__get_username(self):
+        g = bool(py2pack.utils.get_user_name())
+        self.assertEqual(g, True)
+
     def test__get_archive_filelist_tarfile(self):
         file_name = self._create_tarfile()
         expected_files = sorted(["file1", "file2", "file3"])

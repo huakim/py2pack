@@ -58,8 +58,6 @@ def test_template(tmpdir, template, fetch_tarball, project, version):
     args = py2pack.Munch({})
     args.template = template
     args.maintainer = username
-    assert py2pack.get_user_name()
-    assert py2pack.get_user_name(args) == username
     base, ext = template.split(".")
     suffix = '-augmented' if fetch_tarball else ''
     filename = f"{base}{suffix}.{ext}"

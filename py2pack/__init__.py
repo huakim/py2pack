@@ -17,11 +17,10 @@ import argparse
 import platformdirs
 import datetime
 import glob
-import json
 import os
 import pprint
-import pwd
 import re
+import json
 import sys
 import warnings
 
@@ -34,15 +33,11 @@ import py2pack.requires
 from py2pack import version as py2pack_version
 from py2pack.utils import (_get_archive_filelist, get_pyproject_table,
                            parse_pyproject, get_setuptools_scripts,
-                           get_metadata)
-
-from email import parser
-import tarfile
-import zipfile
+                           get_metadata, get_user_name, no_ending_dot,
+                           single_line, pypi_archive_file,
+                           pypi_json_file, pypi_text_file,
+                           pypi_text_metaextract)
 from packaging.requirements import Requirement
-from io import StringIO
-from importlib import metadata
-
 
 try:
     import distro
@@ -78,77 +73,6 @@ def pypi_json(project, release=None):
     with requests.get('https://pypi.org/pypi/{}{}/json'.format(project, version)) as r:
         pypimeta = r.json()
     return pypimeta
-
-
-def pypi_text_file(pkg_info_path):
-    pkg_info_file = open(pkg_info_path, 'r')
-    text = pypi_text_stream(pkg_info_file)
-    pkg_info_file.close()
-    return text
-
-
-def pypi_text_stream(pkg_info_stream):
-    pkg_info_lines = parser.Parser().parse(pkg_info_stream)
-    return pypi_text_items(pkg_info_lines.items())
-
-
-def pypi_text_metaextract(library):
-    pkg_info_lines = metadata.metadata(library)
-    return pypi_text_items(pkg_info_lines.items())
-
-
-def pypi_text_items(pkg_info_items):
-    pkg_info_dict = {}
-    for key, value in pkg_info_items:
-        key = key.lower().replace('-', '_')
-        if key in {'requires_dist', 'provides_extra'}:
-            val = dict.setdefault(pkg_info_dict, key, [])
-            val.append(value)
-        elif key in {'classifier'}:
-            val = dict.setdefault(pkg_info_dict, key + 's', [])
-            val.append(value)
-        elif key in {'project_url'}:
-            key1, val = value.split(',', 1)
-            pkg_info_dict.setdefault(key + 's', {})[key1.strip()] = val.strip()
-        else:
-            pkg_info_dict[key] = value
-    return {'info': pkg_info_dict, 'urls': []}
-
-
-def pypi_json_file(file_path):
-    json_file = open(file_path, 'r')
-    js = pypi_json_stream(json_file)
-    json_file.close()
-    return js
-
-
-def pypi_json_stream(json_stream):
-    js = json.load(json_stream)
-    if 'info' not in js:
-        js = {'info': js}
-    if 'urls' not in js:
-        js['urls'] = []
-    return js
-
-
-def _check_if_pypi_archive_file(path):
-    return path.count('/') == 1 and os.path.basename(path) == 'PKG-INFO'
-
-
-def pypi_archive_file(file_path):
-    if tarfile.is_tarfile(file_path):
-        with tarfile.open(file_path, 'r') as archive:
-            for member in archive.getmembers():
-                if _check_if_pypi_archive_file(member.name):
-                    return pypi_text_stream(StringIO(archive.extractfile(member).read().decode()))
-    elif zipfile.is_zipfile(file_path):
-        with zipfile.ZipFile(file_path, 'r') as archive:
-            for member in archive.namelist():
-                if _check_if_pypi_archive_file(member):
-                    return pypi_text_stream(StringIO(archive.open(member).read().decode()))
-    else:
-        raise Exception("Can not extract '%s'. Not a tar or zip file" % file_path)
-    raise KeyError('PKG-INFO not found on archive ' + file_path)
 
 
 def _get_template_dirs():
@@ -445,16 +369,6 @@ def _get_source_url(pypi_name, filename):
         pypi_name[0], pypi_name, filename)
 
 
-def get_user_name(args=None):
-    try:
-        maintainer = args.maintainer
-        if maintainer is not None:
-            return maintainer
-    except Exception:
-        pass
-    return pwd.getpwuid(os.getuid()).pw_name
-
-
 def generate(args):
     # TODO (toabctl): remove this is a later release
     if args.run:
@@ -471,7 +385,7 @@ def generate(args):
     durl = newest_download_url(args)
     source_url = data['source_url'] = durl and durl['download_url']
     data['year'] = datetime.datetime.now().year                             # set current year
-    data['user_name'] = get_user_name(args)                   # set system user (packager)
+    data['user_name'] = args.maintainer or get_user_name()                   # set system user (packager)
 
     # If package name supplied on command line differs in case from PyPI's one
     # then package archive will be fetched but the name will be the one from PyPI.
@@ -515,16 +429,9 @@ def generate(args):
         field_attr = getattr(args, field)
         if field_attr:
             data[field] = field_attr
-        else:
-            if field not in data:
-                continue
-            else:
-                field_attr = data[field]
-        # remove line breaks to avoid multiline rpm spec file
-        data[field + '_singleline'] = str(field_attr).replace('\n', ' ')
 
-    summary_singleline = data.get('summary_singleline', '')
-    data['summary_no_ending_dot_singleline'] = re.sub(r'(.*)\.', r'\g<1>', summary_singleline) if summary_singleline else ""
+    data['no_ending_dot'] = no_ending_dot
+    data['single_line'] = single_line
 
     env = _prepare_template_env(_get_template_dirs())
     template = env.get_template(args.template)
@@ -599,7 +506,7 @@ def Munch(args):
         "__contains__": d.__contains__})()
 
 
-def main():
+def main(args=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--version', action='version', version='%(prog)s {0}'.format(py2pack_version.version))
     parser.add_argument('--proxy', help='HTTP proxy to use')
@@ -647,7 +554,7 @@ def main():
     parser_help = subparsers.add_parser('help', help='show this help')
     parser_help.set_defaults(func=lambda args: parser.print_help())
 
-    args = Munch(parser.parse_args().__dict__)
+    args = Munch(parser.parse_args(args or sys.argv[1:]).__dict__)
 
     # set HTTP proxy if one is provided
     if args.proxy:
@@ -668,6 +575,14 @@ def main():
             subparsers.choices[namestr].error("The name argument is required if no --localfile is provided.")
 
     args.func(args)
+
+
+def run(*args):
+    try:
+        main(args)
+        return 0
+    except SystemExit as e:
+        return e.code
 
 
 # fallback if run directly

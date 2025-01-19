@@ -4,7 +4,7 @@ Name:           python-%{mod_name}
 Version:        1.5.1
 Release:        %mkrel 1
 Url:            https://python-poetry.org/
-Summary:        Python dependency management and packaging made easy.
+Summary:        Python dependency management and packaging made easy
 License:        MIT
 Group:          Development/Python
 Source:         https://files.pythonhosted.org/packages/source/p/poetry/poetry-%{version}.tar.gz

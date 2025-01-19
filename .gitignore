@@ -9,6 +9,8 @@ coverage
 dist
 nosetests.xml
 *.pyc
+*.spec
+*.tar.gz
 *.egg-info
 .venv*
 .tox
