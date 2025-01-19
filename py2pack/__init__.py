@@ -496,7 +496,7 @@ def generate(args):
     elif localarchive:
         tarball_file = localarchive
     else:
-        tarball_file = args.name + '-' + args.version + '.zip'
+        tarball_file = args.name + '-' + args.version + '.tar.gz'
 
     if localarchive:
         _augment_data_from_tarball(args, localarchive, data)
