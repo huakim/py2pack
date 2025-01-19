@@ -25,19 +25,6 @@ import pytest
 
 import py2pack
 
-
-class Args(object):
-    run = False
-    template = ''
-    filename = ''
-    name = ''
-    version = ''
-    source_url = None
-    source_glob = None
-    local = False
-    localfile = ''
-
-
 compare_dir = os.path.join(os.path.dirname(__file__), 'examples')
 maxDiff = None
 
@@ -68,7 +55,7 @@ username = generate_random_string(22)
 def test_template(tmpdir, template, fetch_tarball, project, version):
     """ Test if generated specfile equals to stored one. """
 
-    args = Args()
+    args = py2pack.Munch({})
     args.template = template
     args.maintainer = username
     assert py2pack.get_user_name()

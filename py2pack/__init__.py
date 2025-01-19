@@ -40,7 +40,6 @@ from email import parser
 import tarfile
 import zipfile
 from packaging.requirements import Requirement
-from os.path import basename
 from io import StringIO
 from importlib import metadata
 
@@ -133,7 +132,7 @@ def pypi_json_stream(json_stream):
 
 
 def _check_if_pypi_archive_file(path):
-    return path.count('/') == 1 and basename(path) == 'PKG-INFO'
+    return path.count('/') == 1 and os.path.basename(path) == 'PKG-INFO'
 
 
 def pypi_archive_file(file_path):
@@ -480,15 +479,22 @@ def generate(args):
         if tarball_file:
             break
 
+    localarchive = args.localarchive
     if tarball_file:                                                        # get some more info from that
         tarball_file = tarball_file[0]
-        _augment_data_from_tarball(args, tarball_file, data)
+    elif localarchive:
+        tarball_file = localarchive
+    else:
+        tarball_file = args.name + '-' + args.version + '.zip'
 
+    if localarchive:
+        _augment_data_from_tarball(args, localarchive, data)
+    elif os.path.exists(tarball_file):
+        _augment_data_from_tarball(args, tarball_file, data)
     else:
         warnings.warn("No tarball for {} in version {} found. Valuable "
                       "information for the generation might be missing."
                       "".format(args.name, args.version))
-        tarball_file = args.name + '-' + args.version + '.zip'
 
     if not source_url:
         data['source_url'] = os.path.basename(tarball_file)
@@ -517,6 +523,7 @@ def fetch_data(args):
     if localfile:
         try:
             data = pypi_archive_file(localfile)
+            args.localarchive = localfile
         except Exception:
             try:
                 data = pypi_json_file(localfile)
@@ -563,7 +570,8 @@ def file_template_list():
 
 def Munch(args):
     import collections
-    d = collections.defaultdict(lambda: None, args.__dict__)
+    d = collections.defaultdict(lambda: None)
+    d.update(args)
     return type('Munch', tuple(), {
         "__getattr__": d.__getitem__,
         "__setattr__": d.__setitem__,
@@ -617,7 +625,7 @@ def main():
     parser_help = subparsers.add_parser('help', help='show this help')
     parser_help.set_defaults(func=lambda args: parser.print_help())
 
-    args = Munch(parser.parse_args())
+    args = Munch(parser.parse_args().__dict__)
 
     # set HTTP proxy if one is provided
     if args.proxy:
