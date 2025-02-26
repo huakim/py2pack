@@ -46,7 +46,7 @@ Summary:        %{summary}
 {%- endif %}
 
 %prep
-%autosetup -p1 -n %{pypi_name}-%{version}
+%autosetup -p1 -n {{ name|replace('.','_')|replace('-','_') }}-%{version}
 
 
 %generate_buildrequires
