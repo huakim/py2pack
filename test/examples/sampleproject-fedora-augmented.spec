@@ -32,7 +32,7 @@ Summary:        %{summary}
 %pyproject_extras_subpkg -n %{python_name} dev,test
 
 %prep
-%autosetup -p1 -n %{pypi_name}-%{version}
+%autosetup -p1 -n sampleproject-%{version}
 
 
 %generate_buildrequires

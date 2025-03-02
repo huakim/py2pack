@@ -144,7 +144,7 @@ Summary:        %{summary}
 %description -n %{python_name} %_description
 
 %prep
-%autosetup -p1 -n %{pypi_name}-%{version}
+%autosetup -p1 -n poetry-%{version}
 
 
 %generate_buildrequires
