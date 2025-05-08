@@ -110,7 +110,11 @@ def fix_data(args):
     data_info["requires_dist"] = requires_dist
     data_info["provides_extra"] = provides_extra
     data_info["classifiers"] = (data_info.get("classifiers", []) or [])
-    urls = data_info['project_urls'] = dict(data_info.get('project_urls', {}))
+    try:
+        urls = dict(data_info.get('project_urls'))
+    except TypeError:
+        urls = {}
+    data_info['project_urls'] = urls
     if 'home_page' not in data_info:
         home_page = _get_homepage(urls) or data_info.get('project_url', None)
         if home_page:
